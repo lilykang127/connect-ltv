@@ -33,6 +33,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({ onSearch }) => {
       if (onSearch) {
         await onSearch(query);
       } else {
+        // Use navigate to send to results page with the query
         navigate(`/results?q=${encodeURIComponent(query)}`);
       }
     } catch (error) {

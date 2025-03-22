@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 const Results: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [results, setResults] = useState<AlumniData[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -18,14 +19,23 @@ const Results: React.FC = () => {
 
   useEffect(() => {
     const fetchResults = async () => {
-      if (!query) return;
+      if (!query) {
+        setIsLoading(false);
+        setError("No search query provided");
+        return;
+      }
       
       setIsLoading(true);
+      setError(null);
+      
       try {
+        console.log("Fetching alumni results for query:", query);
         const alumniResults = await searchAlumni({ query });
+        console.log("Results received:", alumniResults.length);
         setResults(alumniResults);
       } catch (error) {
         console.error('Error fetching results:', error);
+        setError("Failed to search alumni. Please try again.");
         toast({
           title: "Search Error",
           description: "There was a problem searching for alumni. Please try again.",
@@ -63,6 +73,17 @@ const Results: React.FC = () => {
 
           {isLoading ? (
             <ResultsLoader />
+          ) : error ? (
+            <div className="text-center py-12">
+              <h3 className="text-xl font-medium text-gray-700 mb-4">Error</h3>
+              <p className="text-gray-600 mb-6">{error}</p>
+              <button 
+                onClick={() => navigate('/')}
+                className="gradient-button py-2 px-4 rounded-lg text-white shadow-md transition-all hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-connect-blue focus:ring-offset-2"
+              >
+                New Search
+              </button>
+            </div>
           ) : results.length > 0 ? (
             <div className="space-y-6">
               {results.map((alumni, index) => (
