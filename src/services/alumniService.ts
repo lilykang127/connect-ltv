@@ -15,23 +15,43 @@ export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise
   try {
     console.log('Searching for:', query);
     
+    if (!query.trim()) {
+      console.log('Empty query, returning empty results');
+      return [];
+    }
+    
     // Process search terms - filter out terms that are too short
     const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 2);
     console.log('Search terms:', searchTerms);
     
-    // Construct the search filter
-    const searchFilter = searchTerms.map(term => 
-      `Title.ilike.%${term}%, Company.ilike.%${term}%, Location.ilike.%${term}%, function.ilike.%${term}%, stage.ilike.%${term}%, comments.ilike.%${term}%`
-    ).join(',');
+    if (searchTerms.length === 0) {
+      console.log('No valid search terms found, returning empty results');
+      return [];
+    }
     
-    console.log('Using filter:', searchFilter);
-    console.log('Querying table:', 'LTV Alumni Database');
+    // Build a more robust search filter using a proper Supabase OR filter syntax
+    // Each term needs to be checked against each column we want to search
+    let filterString = '';
     
-    // Query the database table
+    searchTerms.forEach((term, index) => {
+      if (index > 0) filterString += ',';
+      filterString += `Title.ilike.%${term}%`;
+      filterString += `,Company.ilike.%${term}%`;
+      filterString += `,Location.ilike.%${term}%`;
+      filterString += `,function.ilike.%${term}%`;
+      filterString += `,stage.ilike.%${term}%`;
+      filterString += `,comments.ilike.%${term}%`;
+      filterString += `,"First Name".ilike.%${term}%`;
+      filterString += `,"Last Name".ilike.%${term}%`;
+    });
+    
+    console.log('Using filter string:', filterString);
+    
+    // Query the database table with the improved filter
     const { data, error } = await supabase
       .from('LTV Alumni Database')
       .select('*')
-      .or(searchFilter)
+      .or(filterString)
       .limit(limit);
     
     if (error) {
@@ -39,8 +59,8 @@ export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise
       throw error;
     }
     
-    console.log('Search results:', data ? data.length : 0);
-    console.log('First result:', data && data.length > 0 ? data[0] : 'No results');
+    console.log('Search results count:', data ? data.length : 0);
+    console.log('Sample result:', data && data.length > 0 ? JSON.stringify(data[0]) : 'No results');
     
     // Transform data to match AlumniData interface
     return data.map(alumni => ({

@@ -26,6 +26,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({ onSearch }) => {
       return;
     }
     
+    console.log('Submitting search query:', query);
     setIsSubmitting(true);
     
     try {
