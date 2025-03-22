@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ExternalLink, Mail, ArrowRight } from 'lucide-react';
+import { ExternalLink, Mail, ArrowRight, Send } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 
 export interface AlumniData {
@@ -13,11 +13,41 @@ export interface AlumniData {
   linkedIn: string;
 }
 
-const AlumniCard: React.FC<{ alumni: AlumniData; rank: number }> = ({ alumni, rank }) => {
+interface AlumniCardProps {
+  alumni: AlumniData;
+  rank: number;
+  searchQuery?: string;
+}
+
+const AlumniCard: React.FC<AlumniCardProps> = ({ alumni, rank, searchQuery = '' }) => {
   const { toast } = useToast();
   const [isHovered, setIsHovered] = useState(false);
 
   const handleEmailDraft = () => {
+    // Generate an email subject based on the search query
+    const subject = encodeURIComponent(`Request for advice from a fellow HBS LTV alum`);
+    
+    // Generate an email body with personalized content
+    const introLines = [
+      `Hi ${alumni.name.split(' ')[0]},`,
+      '',
+      `I hope this email finds you well. I'm reaching out as a fellow Harvard Business School LTV alum seeking some advice.`,
+      '',
+      `I noticed your experience as ${alumni.position} at ${alumni.company} and thought you might be able to provide some insights regarding ${searchQuery}.`,
+      '',
+      `Would you be open to a brief conversation to share your perspective? I'd really appreciate your expertise on this topic.`,
+      '',
+      `Thank you for considering, and I look forward to potentially connecting.`,
+      '',
+      `Best regards,`,
+      `[Your Name]`
+    ];
+    
+    const body = encodeURIComponent(introLines.join('\n'));
+    
+    // Open the default email client with pre-filled content
+    window.location.href = `mailto:${alumni.email}?subject=${subject}&body=${body}`;
+    
     toast({
       title: "Email draft created",
       description: `A draft email to ${alumni.name} has been prepared with a personalized introduction.`,
@@ -43,17 +73,21 @@ const AlumniCard: React.FC<{ alumni: AlumniData; rank: number }> = ({ alumni, ra
           </div>
         </div>
         <div className="flex space-x-2">
-          <a 
-            href={alumni.linkedIn} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="p-2 text-gray-500 hover:text-connect-blue transition-colors"
-          >
-            <ExternalLink size={18} />
-          </a>
+          {alumni.linkedIn && (
+            <a 
+              href={alumni.linkedIn} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="p-2 text-gray-500 hover:text-connect-blue transition-colors"
+              aria-label="LinkedIn Profile"
+            >
+              <ExternalLink size={18} />
+            </a>
+          )}
           <a 
             href={`mailto:${alumni.email}`}
             className="p-2 text-gray-500 hover:text-connect-blue transition-colors"
+            aria-label="Email directly"
           >
             <Mail size={18} />
           </a>
@@ -75,7 +109,7 @@ const AlumniCard: React.FC<{ alumni: AlumniData; rank: number }> = ({ alumni, ra
           }`}
         >
           <span>Draft an intro email</span>
-          <ArrowRight size={16} className={`ml-2 transition-transform duration-300 ${isHovered ? 'translate-x-1' : ''}`} />
+          <Send size={16} className={`ml-2 transition-transform duration-300 ${isHovered ? 'translate-x-1' : ''}`} />
         </button>
       </div>
     </div>

@@ -1,5 +1,5 @@
 
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { AlumniData } from '@/components/AlumniCard';
 
 // Interface for search query parameters
@@ -13,51 +13,69 @@ interface SearchParams {
  */
 export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise<AlumniData[]> => {
   try {
-    // For full-text search - you'll need to set up full-text search in Supabase
-    // Using "ilike" for simple pattern matching for now, but should be replaced with more robust search
+    const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 2);
+    
+    // Query the "LTV Alumni Database" table with case-insensitive search
     const { data, error } = await supabase
-      .from('alumni')
+      .from('"LTV Alumni Database"')
       .select('*')
-      .or(`position.ilike.%${query}%,company.ilike.%${query}%,bio.ilike.%${query}%,skills.ilike.%${query}%`)
-      .order('relevance_score', { ascending: false })
+      .or(searchTerms.map(term => 
+        `Title.ilike.%${term}%, Company.ilike.%${term}%, Location.ilike.%${term}%, function.ilike.%${term}%, stage.ilike.%${term}%, comments.ilike.%${term}%`
+      ).join(','))
       .limit(limit);
     
     if (error) throw error;
     
     // Transform data to match AlumniData interface
     return data.map(alumni => ({
-      id: alumni.id,
-      name: alumni.name,
-      position: alumni.position,
-      company: alumni.company,
+      id: alumni.Index || 0,
+      name: `${alumni['First Name'] || ''} ${alumni['Last Name'] || ''}`.trim(),
+      position: alumni['Title'] || '',
+      company: alumni['Company'] || '',
       relevance: calculateRelevance(alumni, query),
-      email: alumni.email,
-      linkedIn: alumni.linkedin_url
+      email: alumni['Email Address'] || '',
+      linkedIn: alumni['LinkedIn URL'] || ''
     }));
   } catch (error) {
     console.error('Error searching alumni:', error);
-    // Return empty array or throw error based on your error handling strategy
     return [];
   }
 };
 
 /**
  * Calculate relevance description based on search query
- * This function will need to be expanded with more sophisticated relevance logic
  */
 const calculateRelevance = (alumni: any, query: string): string => {
-  // This is a simplified example - you'd want more sophisticated relevance calculation
-  // Ideally, this would be done by your backend using embeddings or NLP
-  const lowerQuery = query.toLowerCase();
-  const matchTerms = ['expertise', 'experience', 'background', 'skills', 'knowledge'];
+  const name = `${alumni['First Name'] || ''} ${alumni['Last Name'] || ''}`.trim();
+  const position = alumni['Title'] || 'their position';
+  const company = alumni['Company'] || 'their company';
+  const function_area = alumni['function'] || '';
+  const stage = alumni['stage'] || '';
+  const comments = alumni['comments'] || '';
   
-  const relevanceDescriptions = [
-    `${alumni.name} has extensive ${matchTerms.find(term => lowerQuery.includes(term)) || 'expertise'} in ${alumni.position} at ${alumni.company}.`,
-    `Their background in ${alumni.skills || alumni.industry || 'the field'} makes them an excellent resource for your query.`,
-    `Based on their work at ${alumni.company}, they can provide valuable insights on your specific needs.`
-  ];
+  // Create a more personalized relevance string based on available data
+  const relevancePoints = [];
   
-  return relevanceDescriptions.join(' ');
+  if (position && company) {
+    relevancePoints.push(`${name} has experience as ${position} at ${company}.`);
+  }
+  
+  if (function_area) {
+    relevancePoints.push(`Their expertise in ${function_area} aligns with your interests.`);
+  }
+  
+  if (stage) {
+    relevancePoints.push(`They have experience with ${stage} stage companies.`);
+  }
+  
+  if (comments) {
+    relevancePoints.push(`${comments}`);
+  }
+  
+  // Add a general point about how they can help with the specific query
+  relevancePoints.push(`Based on your search for "${query}", they can provide valuable insights and guidance.`);
+  
+  return relevancePoints.join(' ');
 };
 
 /**
@@ -66,9 +84,9 @@ const calculateRelevance = (alumni: any, query: string): string => {
 export const getAlumniById = async (id: number): Promise<AlumniData | null> => {
   try {
     const { data, error } = await supabase
-      .from('alumni')
+      .from('"LTV Alumni Database"')
       .select('*')
-      .eq('id', id)
+      .eq('Index', id)
       .single();
     
     if (error) throw error;
@@ -76,13 +94,13 @@ export const getAlumniById = async (id: number): Promise<AlumniData | null> => {
     if (!data) return null;
     
     return {
-      id: data.id,
-      name: data.name,
-      position: data.position,
-      company: data.company,
-      relevance: data.bio || '',
-      email: data.email,
-      linkedIn: data.linkedin_url
+      id: data.Index || 0,
+      name: `${data['First Name'] || ''} ${data['Last Name'] || ''}`.trim(),
+      position: data['Title'] || '',
+      company: data['Company'] || '',
+      relevance: data['comments'] || '',
+      email: data['Email Address'] || '',
+      linkedIn: data['LinkedIn URL'] || ''
     };
   } catch (error) {
     console.error('Error fetching alumni by ID:', error);

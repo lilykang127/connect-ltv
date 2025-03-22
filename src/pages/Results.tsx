@@ -66,7 +66,12 @@ const Results: React.FC = () => {
           ) : results.length > 0 ? (
             <div className="space-y-6">
               {results.map((alumni, index) => (
-                <AlumniCard key={alumni.id} alumni={alumni} rank={index} />
+                <AlumniCard 
+                  key={alumni.id} 
+                  alumni={alumni} 
+                  rank={index} 
+                  searchQuery={query}
+                />
               ))}
             </div>
           ) : (
