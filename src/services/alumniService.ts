@@ -13,19 +13,34 @@ interface SearchParams {
  */
 export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise<AlumniData[]> => {
   try {
-    const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 2);
+    console.log('Searching for:', query);
     
-    // Query the "LTV Alumni Database" table with case-insensitive search
-    // Use the table name directly without extra quotes
+    // Process search terms - filter out terms that are too short
+    const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 2);
+    console.log('Search terms:', searchTerms);
+    
+    // Construct the search filter
+    const searchFilter = searchTerms.map(term => 
+      `Title.ilike.%${term}%, Company.ilike.%${term}%, Location.ilike.%${term}%, function.ilike.%${term}%, stage.ilike.%${term}%, comments.ilike.%${term}%`
+    ).join(',');
+    
+    console.log('Using filter:', searchFilter);
+    console.log('Querying table:', 'LTV Alumni Database');
+    
+    // Query the database table
     const { data, error } = await supabase
       .from('LTV Alumni Database')
       .select('*')
-      .or(searchTerms.map(term => 
-        `Title.ilike.%${term}%, Company.ilike.%${term}%, Location.ilike.%${term}%, function.ilike.%${term}%, stage.ilike.%${term}%, comments.ilike.%${term}%`
-      ).join(','))
+      .or(searchFilter)
       .limit(limit);
     
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
+    
+    console.log('Search results:', data ? data.length : 0);
+    console.log('First result:', data && data.length > 0 ? data[0] : 'No results');
     
     // Transform data to match AlumniData interface
     return data.map(alumni => ({
@@ -84,16 +99,25 @@ const calculateRelevance = (alumni: any, query: string): string => {
  */
 export const getAlumniById = async (id: number): Promise<AlumniData | null> => {
   try {
-    // Use the table name directly without extra quotes
+    console.log('Fetching alumni with ID:', id);
+    
     const { data, error } = await supabase
       .from('LTV Alumni Database')
       .select('*')
       .eq('Index', id)
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching alumni by ID:', error);
+      throw error;
+    }
     
-    if (!data) return null;
+    if (!data) {
+      console.log('No alumni found with ID:', id);
+      return null;
+    }
+    
+    console.log('Found alumni:', data);
     
     return {
       id: data.Index || 0,
