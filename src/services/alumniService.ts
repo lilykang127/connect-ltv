@@ -16,8 +16,9 @@ export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise
     const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 2);
     
     // Query the "LTV Alumni Database" table with case-insensitive search
+    // Use the table name directly without extra quotes
     const { data, error } = await supabase
-      .from('"LTV Alumni Database"')
+      .from('LTV Alumni Database')
       .select('*')
       .or(searchTerms.map(term => 
         `Title.ilike.%${term}%, Company.ilike.%${term}%, Location.ilike.%${term}%, function.ilike.%${term}%, stage.ilike.%${term}%, comments.ilike.%${term}%`
@@ -83,8 +84,9 @@ const calculateRelevance = (alumni: any, query: string): string => {
  */
 export const getAlumniById = async (id: number): Promise<AlumniData | null> => {
   try {
+    // Use the table name directly without extra quotes
     const { data, error } = await supabase
-      .from('"LTV Alumni Database"')
+      .from('LTV Alumni Database')
       .select('*')
       .eq('Index', id)
       .single();
