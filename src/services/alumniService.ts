@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { AlumniData } from '@/components/AlumniCard';
 
@@ -19,7 +20,7 @@ export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise
       return [];
     }
     
-    // Instead of filtering short terms, let's keep all meaningful terms
+    // Create search terms from the query
     const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
     console.log('Search terms:', searchTerms);
     
@@ -28,79 +29,46 @@ export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise
       return [];
     }
     
-    // Check if we can directly query for a name (first + last)
-    const possibleFullName = query.trim();
-    let results = [];
+    // Build the filter string for fuzzy search across all relevant fields
+    let filterString = '';
     
-    // First try to do an exact match on the full name
-    if (possibleFullName.includes(' ')) {
-      console.log('Trying exact name match first...');
+    searchTerms.forEach((term, index) => {
+      if (index > 0) filterString += ',';
       
-      const nameParts = possibleFullName.split(' ');
-      if (nameParts.length >= 2) {
-        const firstName = nameParts[0];
-        const lastName = nameParts.slice(1).join(' ');
-        
-        const { data: exactMatches, error: exactMatchError } = await supabase
-          .from('LTV Alumni Database')
-          .select('*')
-          .ilike('First Name', `%${firstName}%`)
-          .ilike('Last Name', `%${lastName}%`);
-        
-        if (exactMatchError) {
-          console.error('Error with exact name match:', exactMatchError);
-        } else if (exactMatches && exactMatches.length > 0) {
-          console.log('Found exact name matches:', exactMatches.length);
-          results = exactMatches;
-        }
-      }
+      // Search across all relevant fields with ilike for fuzzy matching
+      filterString += `"First Name".ilike.%${term}%`;
+      filterString += `,"Last Name".ilike.%${term}%`;
+      filterString += `,Title.ilike.%${term}%`;
+      filterString += `,Company.ilike.%${term}%`;
+      filterString += `,Location.ilike.%${term}%`;
+      filterString += `,function.ilike.%${term}%`;
+      filterString += `,stage.ilike.%${term}%`;
+      filterString += `,comments.ilike.%${term}%`;
+    });
+    
+    console.log('Using filter string:', filterString);
+    
+    // Execute the search query against the database
+    const { data, error } = await supabase
+      .from('LTV Alumni Database')
+      .select('*')
+      .or(filterString)
+      .limit(limit);
+    
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
     }
     
-    // If no results from exact name match, do a broader search
-    if (results.length === 0) {
-      console.log('Performing broader search...');
-      
-      // Build a search filter for each term
-      let filterString = '';
-      
-      searchTerms.forEach((term, index) => {
-        if (index > 0) filterString += ',';
-        filterString += `Title.ilike.%${term}%`;
-        filterString += `,Company.ilike.%${term}%`;
-        filterString += `,Location.ilike.%${term}%`;
-        filterString += `,function.ilike.%${term}%`;
-        filterString += `,stage.ilike.%${term}%`;
-        filterString += `,comments.ilike.%${term}%`;
-        filterString += `,"First Name".ilike.%${term}%`;
-        filterString += `,"Last Name".ilike.%${term}%`;
-      });
-      
-      console.log('Using filter string:', filterString);
-      
-      // Perform the search
-      const { data, error } = await supabase
-        .from('LTV Alumni Database')
-        .select('*')
-        .or(filterString)
-        .limit(limit);
-      
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
-      
-      results = data || [];
-    }
-    
-    console.log('Search results count:', results.length);
-    if (results.length > 0) {
-      console.log('Sample result:', JSON.stringify(results[0]));
+    console.log('Search results count:', data?.length || 0);
+    if (data && data.length > 0) {
+      console.log('Sample result:', JSON.stringify(data[0]));
     } else {
       console.log('No results found');
     }
     
-    // Transform data to match AlumniData interface
-    return results.map(alumni => ({
+    // Transform database results to match the AlumniData interface
+    return (data || []).map(alumni => ({
       id: alumni.Index || 0,
       name: `${alumni['First Name'] || ''} ${alumni['Last Name'] || ''}`.trim(),
       position: alumni['Title'] || '',
@@ -111,7 +79,7 @@ export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise
     }));
   } catch (error) {
     console.error('Error searching alumni:', error);
-    throw error; // Let's throw the error so we can handle it in the UI
+    throw error;
   }
 };
 
