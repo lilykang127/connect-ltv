@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { AlumniData } from '@/components/AlumniCard';
 
@@ -9,78 +8,21 @@ interface SearchParams {
 }
 
 /**
- * Search for alumni based on query across all fields
+ * Search for alumni - now always returns all profiles regardless of query
  */
-export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise<AlumniData[]> => {
+export const searchAlumni = async ({ query, limit = 50 }: SearchParams): Promise<AlumniData[]> => {
   try {
-    console.log('Searching for:', query);
+    console.log('Search request received with query:', query);
+    console.log('Fetching all alumni profiles regardless of query');
     
-    if (!query.trim()) {
-      console.log('Empty query, returning empty results');
-      return [];
-    }
-
-    // Create search terms by splitting the query
-    const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
-    
-    if (terms.length === 0) {
-      return [];
-    }
-
-    console.log('Search terms:', terms);
-    
-    // Create a more effective query builder
-    let queryBuilder = supabase
+    // Simply fetch all records from the database with a limit
+    const { data, error } = await supabase
       .from('LTV Alumni Database')
-      .select('*');
-    
-    // For single term searches, first try fuzzy matching on Title
-    if (terms.length === 1) {
-      console.log('Performing fuzzy title search for:', terms[0]);
-      const fuzzyTerm = terms[0];
-      
-      // Try fuzzy match on Title first with wildcards before and after
-      const { data: fuzzyMatches, error: fuzzyError } = await supabase
-        .from('LTV Alumni Database')
-        .select('*')
-        .ilike('Title', `%${fuzzyTerm}%`)
-        .limit(limit);
-      
-      if (fuzzyError) {
-        console.error('Error searching for fuzzy title match:', fuzzyError);
-      } else if (fuzzyMatches && fuzzyMatches.length > 0) {
-        console.log('Found fuzzy title matches:', fuzzyMatches.length);
-        
-        // Transform and return fuzzy matches
-        return fuzzyMatches.map(alumni => ({
-          id: alumni.Index || 0,
-          name: `${alumni['First Name'] || ''} ${alumni['Last Name'] || ''}`.trim(),
-          position: alumni['Title'] || '',
-          company: alumni['Company'] || '',
-          relevance: generateRelevanceText(alumni, query),
-          email: alumni['Email Address'] || '',
-          linkedIn: alumni['LinkedIn URL'] || ''
-        }));
-      } else {
-        console.log('No fuzzy title matches found, trying broader search');
-      }
-    }
-    
-    // If multiple terms or no fuzzy matches found, perform broader search
-    console.log('Performing broader search across all fields');
-    
-    // Apply fuzzy search across all fields with wildcards
-    for (const term of terms) {
-      queryBuilder = queryBuilder.or(`"First Name".ilike.%${term}%,"Last Name".ilike.%${term}%,Title.ilike.%${term}%,Company.ilike.%${term}%,Location.ilike.%${term}%,function.ilike.%${term}%,stage.ilike.%${term}%,comments.ilike.%${term}%`);
-    }
-    
-    // Apply limit and execute
-    queryBuilder = queryBuilder.limit(limit);
-    console.log('Executing search query');
-    const { data, error } = await queryBuilder;
+      .select('*')
+      .limit(limit);
     
     if (error) {
-      console.error('Error searching alumni:', error);
+      console.error('Error fetching alumni:', error);
       throw error;
     }
     
@@ -97,7 +39,7 @@ export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise
       linkedIn: alumni['LinkedIn URL'] || ''
     }));
   } catch (error) {
-    console.error('Error searching alumni:', error);
+    console.error('Error fetching alumni:', error);
     throw error;
   }
 };

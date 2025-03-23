@@ -19,26 +19,20 @@ const Results: React.FC = () => {
 
   useEffect(() => {
     const fetchResults = async () => {
-      if (!query) {
-        setIsLoading(false);
-        setError("No search query provided");
-        return;
-      }
-      
       setIsLoading(true);
       setError(null);
       
       try {
-        console.log("Fetching alumni results for query:", query);
+        console.log("Fetching all alumni profiles");
         const alumniResults = await searchAlumni({ query });
         console.log("Results received:", alumniResults.length);
         setResults(alumniResults);
       } catch (error) {
         console.error('Error fetching results:', error);
-        setError("Failed to search alumni. Please try again.");
+        setError("Failed to fetch alumni. Please try again.");
         toast({
           title: "Search Error",
-          description: "There was a problem searching for alumni. Please try again.",
+          description: "There was a problem retrieving alumni profiles. Please try again.",
           variant: "destructive",
         });
       } finally {
@@ -67,11 +61,11 @@ const Results: React.FC = () => {
       <main className="container mx-auto flex-1 px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8 animate-fade-in">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Results for "{query}"</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">All Alumni Profiles</h2>
             <p className="text-gray-600">
               {results.length > 0 ? 
-                `Found ${results.length} alumni matching your search.` : 
-                'No results found.'
+                `Showing ${results.length} alumni profiles.` : 
+                'Loading profiles...'
               }
             </p>
           </div>
@@ -86,7 +80,7 @@ const Results: React.FC = () => {
                 onClick={() => navigate('/')}
                 className="gradient-button py-2 px-4 rounded-lg text-white shadow-md transition-all hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-connect-blue focus:ring-offset-2"
               >
-                New Search
+                Try Again
               </button>
             </div>
           ) : results.length > 0 ? (
@@ -102,25 +96,15 @@ const Results: React.FC = () => {
             </div>
           ) : (
             <div className="text-center py-12">
-              <h3 className="text-xl font-medium text-gray-700 mb-4">No matching alumni found</h3>
+              <h3 className="text-xl font-medium text-gray-700 mb-4">No profiles found</h3>
               <p className="text-gray-600 mb-6">
-                Try refining your search criteria. Here are some things to try:
+                Please try again later.
               </p>
-              <div className="p-6 bg-gray-50 rounded-lg mb-8 text-left">
-                <h4 className="font-medium text-gray-700 mb-3">Search Tips:</h4>
-                <ul className="list-disc list-inside text-gray-600 space-y-2">
-                  <li>Try using just a job title like <strong>CEO</strong> or <strong>Director</strong></li>
-                  <li>Search for company names like <strong>Google</strong> or <strong>Amazon</strong></li>
-                  <li>Use broader terms for industry functions like <strong>Marketing</strong></li>
-                  <li>Search by location such as <strong>New York</strong> or <strong>San Francisco</strong></li>
-                  <li>Try to use single words rather than complex phrases</li>
-                </ul>
-              </div>
               <button 
                 onClick={() => navigate('/')}
                 className="gradient-button py-2 px-4 rounded-lg text-white shadow-md transition-all hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-connect-blue focus:ring-offset-2"
               >
-                New Search
+                Go Back
               </button>
             </div>
           )}
