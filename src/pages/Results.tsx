@@ -104,15 +104,16 @@ const Results: React.FC = () => {
             <div className="text-center py-12">
               <h3 className="text-xl font-medium text-gray-700 mb-4">No matching alumni found</h3>
               <p className="text-gray-600 mb-6">
-                Try searching for a different term. For example, try company names, job titles, or first/last names.
+                Try refining your search criteria. Here are some things to try:
               </p>
-              <div className="p-4 bg-gray-50 rounded-lg mb-6 text-left">
-                <h4 className="font-medium text-gray-700 mb-2">Search Tips:</h4>
-                <ul className="list-disc list-inside text-gray-600 space-y-1">
-                  <li>Try searching for "McKinsey" to find consultants</li>
-                  <li>Search by job title like "CEO" or "Director"</li>
-                  <li>Try searching for company names like "Google" or "Apple"</li>
-                  <li>First names or last names work too</li>
+              <div className="p-6 bg-gray-50 rounded-lg mb-8 text-left">
+                <h4 className="font-medium text-gray-700 mb-3">Search Tips:</h4>
+                <ul className="list-disc list-inside text-gray-600 space-y-2">
+                  <li>Try using just a job title like <strong>CEO</strong> or <strong>Director</strong></li>
+                  <li>Search for company names like <strong>Google</strong> or <strong>Amazon</strong></li>
+                  <li>Use broader terms for industry functions like <strong>Marketing</strong></li>
+                  <li>Search by location such as <strong>New York</strong> or <strong>San Francisco</strong></li>
+                  <li>Try to use single words rather than complex phrases</li>
                 </ul>
               </div>
               <button 

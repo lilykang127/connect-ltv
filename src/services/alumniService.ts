@@ -29,26 +29,54 @@ export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise
 
     console.log('Search terms:', terms);
     
-    // Build a proper filter condition for Supabase
-    const filterConditions = terms.map(term => {
-      return `or("First Name".ilike.%${term}%,"Last Name".ilike.%${term}%,Title.ilike.%${term}%,Company.ilike.%${term}%,Location.ilike.%${term}%,function.ilike.%${term}%,stage.ilike.%${term}%,comments.ilike.%${term}%)`;
-    });
-    
-    // Connect all terms with AND
+    // Create a more effective query builder
     let queryBuilder = supabase
       .from('LTV Alumni Database')
       .select('*');
     
-    // Apply each term filter
-    terms.forEach(term => {
-      queryBuilder = queryBuilder.or(
-        `"First Name".ilike.%${term}%,"Last Name".ilike.%${term}%,Title.ilike.%${term}%,Company.ilike.%${term}%,Location.ilike.%${term}%,function.ilike.%${term}%,stage.ilike.%${term}%,comments.ilike.%${term}%`
-      );
-    });
+    // For single term searches, try exact title match first (case insensitive)
+    if (terms.length === 1) {
+      console.log('Searching for exact title match:', terms[0]);
+      const exactTerm = terms[0];
+      
+      // Try direct match on Title first (common search case)
+      const { data: exactMatches, error: exactError } = await supabase
+        .from('LTV Alumni Database')
+        .select('*')
+        .ilike('Title', exactTerm)
+        .limit(limit);
+      
+      if (exactError) {
+        console.error('Error searching for exact match:', exactError);
+      } else if (exactMatches && exactMatches.length > 0) {
+        console.log('Found exact title matches:', exactMatches.length);
+        
+        // Transform and return exact matches
+        return exactMatches.map(alumni => ({
+          id: alumni.Index || 0,
+          name: `${alumni['First Name'] || ''} ${alumni['Last Name'] || ''}`.trim(),
+          position: alumni['Title'] || '',
+          company: alumni['Company'] || '',
+          relevance: generateRelevanceText(alumni, query),
+          email: alumni['Email Address'] || '',
+          linkedIn: alumni['LinkedIn URL'] || ''
+        }));
+      } else {
+        console.log('No exact title matches found, trying broader search');
+      }
+    }
     
-    // Apply limit
+    // If multiple terms or no exact matches found, perform broader search
+    console.log('Performing broader search across all fields');
+    
+    // First attempt contains search (field contains term)
+    // Use individual contains searches for better database performance
+    for (const term of terms) {
+      queryBuilder = queryBuilder.or(`"First Name".ilike.%${term}%,"Last Name".ilike.%${term}%,Title.ilike.%${term}%,Company.ilike.%${term}%,Location.ilike.%${term}%,function.ilike.%${term}%,stage.ilike.%${term}%,comments.ilike.%${term}%`);
+    }
+    
+    // Apply limit and execute
     queryBuilder = queryBuilder.limit(limit);
-    
     console.log('Executing search query');
     const { data, error } = await queryBuilder;
     
