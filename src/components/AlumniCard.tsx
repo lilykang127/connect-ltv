@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { ExternalLink, Mail, ArrowRight, Send } from 'lucide-react';
+import { ExternalLink, Mail, Send } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
 
 export interface AlumniData {
@@ -22,8 +23,11 @@ interface AlumniCardProps {
 const AlumniCard: React.FC<AlumniCardProps> = ({ alumni, rank, searchQuery = '' }) => {
   const { toast } = useToast();
   const [isHovered, setIsHovered] = useState(false);
+  const navigate = useNavigate();
 
-  const handleEmailDraft = () => {
+  const handleEmailDraft = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click navigation when clicking the email button
+    
     // Generate an email subject based on the search query
     const subject = encodeURIComponent(`Request for advice from a fellow HBS LTV alum`);
     
@@ -55,12 +59,17 @@ const AlumniCard: React.FC<AlumniCardProps> = ({ alumni, rank, searchQuery = '' 
     });
   };
 
+  const handleCardClick = () => {
+    navigate(`/alumni/${alumni.id}`);
+  };
+
   return (
     <div 
-      className="bg-white border border-gray-200 rounded-lg p-6 card-shadow card-hover animate-fade-in"
+      className="bg-white border border-gray-200 rounded-lg p-6 card-shadow card-hover animate-fade-in cursor-pointer"
       style={{ animationDelay: `${rank * 100}ms` }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleCardClick}
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center">
@@ -80,6 +89,7 @@ const AlumniCard: React.FC<AlumniCardProps> = ({ alumni, rank, searchQuery = '' 
               rel="noopener noreferrer"
               className="p-2 text-gray-500 hover:text-connect-blue transition-colors"
               aria-label="LinkedIn Profile"
+              onClick={(e) => e.stopPropagation()} // Prevent card click
             >
               <ExternalLink size={18} />
             </a>
@@ -88,6 +98,7 @@ const AlumniCard: React.FC<AlumniCardProps> = ({ alumni, rank, searchQuery = '' 
             href={`mailto:${alumni.email}`}
             className="p-2 text-gray-500 hover:text-connect-blue transition-colors"
             aria-label="Email directly"
+            onClick={(e) => e.stopPropagation()} // Prevent card click
           >
             <Mail size={18} />
           </a>
@@ -101,7 +112,7 @@ const AlumniCard: React.FC<AlumniCardProps> = ({ alumni, rank, searchQuery = '' 
       
       <div className="mt-6">
         <button 
-          onClick={handleEmailDraft}
+          onClick={(e) => handleEmailDraft(e)}
           className={`w-full py-2 px-4 rounded-lg flex items-center justify-center transition-all ${
             isHovered 
               ? 'gradient-button text-white' 
