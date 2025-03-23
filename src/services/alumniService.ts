@@ -34,25 +34,25 @@ export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise
       .from('LTV Alumni Database')
       .select('*');
     
-    // For single term searches, try exact title match first (case insensitive)
+    // For single term searches, first try fuzzy matching on Title
     if (terms.length === 1) {
-      console.log('Searching for exact title match:', terms[0]);
-      const exactTerm = terms[0];
+      console.log('Performing fuzzy title search for:', terms[0]);
+      const fuzzyTerm = terms[0];
       
-      // Try direct match on Title first (common search case)
-      const { data: exactMatches, error: exactError } = await supabase
+      // Try fuzzy match on Title first with wildcards before and after
+      const { data: fuzzyMatches, error: fuzzyError } = await supabase
         .from('LTV Alumni Database')
         .select('*')
-        .ilike('Title', exactTerm)
+        .ilike('Title', `%${fuzzyTerm}%`)
         .limit(limit);
       
-      if (exactError) {
-        console.error('Error searching for exact match:', exactError);
-      } else if (exactMatches && exactMatches.length > 0) {
-        console.log('Found exact title matches:', exactMatches.length);
+      if (fuzzyError) {
+        console.error('Error searching for fuzzy title match:', fuzzyError);
+      } else if (fuzzyMatches && fuzzyMatches.length > 0) {
+        console.log('Found fuzzy title matches:', fuzzyMatches.length);
         
-        // Transform and return exact matches
-        return exactMatches.map(alumni => ({
+        // Transform and return fuzzy matches
+        return fuzzyMatches.map(alumni => ({
           id: alumni.Index || 0,
           name: `${alumni['First Name'] || ''} ${alumni['Last Name'] || ''}`.trim(),
           position: alumni['Title'] || '',
@@ -62,15 +62,14 @@ export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise
           linkedIn: alumni['LinkedIn URL'] || ''
         }));
       } else {
-        console.log('No exact title matches found, trying broader search');
+        console.log('No fuzzy title matches found, trying broader search');
       }
     }
     
-    // If multiple terms or no exact matches found, perform broader search
+    // If multiple terms or no fuzzy matches found, perform broader search
     console.log('Performing broader search across all fields');
     
-    // First attempt contains search (field contains term)
-    // Use individual contains searches for better database performance
+    // Apply fuzzy search across all fields with wildcards
     for (const term of terms) {
       queryBuilder = queryBuilder.or(`"First Name".ilike.%${term}%,"Last Name".ilike.%${term}%,Title.ilike.%${term}%,Company.ilike.%${term}%,Location.ilike.%${term}%,function.ilike.%${term}%,stage.ilike.%${term}%,comments.ilike.%${term}%`);
     }
