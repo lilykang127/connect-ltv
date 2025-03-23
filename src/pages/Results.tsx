@@ -12,6 +12,7 @@ const Results: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [results, setResults] = useState<AlumniData[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [searchSummary, setSearchSummary] = useState<string>('');
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -33,6 +34,9 @@ const Results: React.FC = () => {
         const alumniResults = await searchAlumni({ query });
         console.log("Results received:", alumniResults.length);
         setResults(alumniResults);
+        
+        // Set a summary of the search for debugging purposes
+        setSearchSummary(`Search for "${query}" returned ${alumniResults.length} results.`);
       } catch (error) {
         console.error('Error fetching results:', error);
         setError("Failed to search alumni. Please try again.");
@@ -69,6 +73,7 @@ const Results: React.FC = () => {
           <div className="mb-8 animate-fade-in">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Results for your query</h2>
             <p className="text-gray-600 italic">"{query}"</p>
+            {searchSummary && <p className="text-sm text-gray-500 mt-1">{searchSummary}</p>}
           </div>
 
           {isLoading ? (
@@ -98,7 +103,18 @@ const Results: React.FC = () => {
           ) : (
             <div className="text-center py-12">
               <h3 className="text-xl font-medium text-gray-700 mb-4">No matching alumni found</h3>
-              <p className="text-gray-600 mb-6">Try adjusting your search terms to find alumni with relevant expertise.</p>
+              <p className="text-gray-600 mb-6">
+                Try searching for a different term. For example, try company names, job titles, or first/last names.
+              </p>
+              <div className="p-4 bg-gray-50 rounded-lg mb-6 text-left">
+                <h4 className="font-medium text-gray-700 mb-2">Search Tips:</h4>
+                <ul className="list-disc list-inside text-gray-600 space-y-1">
+                  <li>Try searching for "McKinsey" to find consultants</li>
+                  <li>Search by job title like "CEO" or "Director"</li>
+                  <li>Try searching for company names like "Google" or "Apple"</li>
+                  <li>First names or last names work too</li>
+                </ul>
+              </div>
               <button 
                 onClick={() => navigate('/')}
                 className="gradient-button py-2 px-4 rounded-lg text-white shadow-md transition-all hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-connect-blue focus:ring-offset-2"

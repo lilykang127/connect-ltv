@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { AlumniData } from '@/components/AlumniCard';
 
@@ -19,13 +18,44 @@ export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise
       console.log('Empty query, returning empty results');
       return [];
     }
+
+    // First try an exact search on specific fields
+    const exactQuery = query.trim();
+    console.log('Trying exact match first with:', exactQuery);
     
-    // Create search terms from the query
+    // Try exact match on critical fields first
+    const { data: exactMatches, error: exactMatchError } = await supabase
+      .from('LTV Alumni Database')
+      .select('*')
+      .or(`"First Name".ilike.${exactQuery},"Last Name".ilike.${exactQuery},Company.ilike.${exactQuery},Title.ilike.${exactQuery}`)
+      .limit(limit);
+    
+    if (exactMatchError) {
+      console.error('Error with exact match:', exactMatchError);
+    } else if (exactMatches && exactMatches.length > 0) {
+      console.log('Found exact matches:', exactMatches.length);
+      
+      // Transform exact matches to match AlumniData interface
+      return exactMatches.map(alumni => ({
+        id: alumni.Index || 0,
+        name: `${alumni['First Name'] || ''} ${alumni['Last Name'] || ''}`.trim(),
+        position: alumni['Title'] || '',
+        company: alumni['Company'] || '',
+        relevance: calculateRelevance(alumni, query),
+        email: alumni['Email Address'] || '',
+        linkedIn: alumni['LinkedIn URL'] || ''
+      }));
+    }
+    
+    // If no exact matches, perform fuzzy search
+    console.log('No exact matches, performing fuzzy search');
+    
+    // Create search terms from the query for fuzzy search
     const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
-    console.log('Search terms:', searchTerms);
+    console.log('Fuzzy search terms:', searchTerms);
     
     if (searchTerms.length === 0) {
-      console.log('No search terms found, returning empty results');
+      console.log('No search terms found for fuzzy search, returning empty results');
       return [];
     }
     
@@ -36,6 +66,7 @@ export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise
       if (index > 0) filterString += ',';
       
       // Search across all relevant fields with ilike for fuzzy matching
+      // Using %term% for substring matching
       filterString += `"First Name".ilike.%${term}%`;
       filterString += `,"Last Name".ilike.%${term}%`;
       filterString += `,Title.ilike.%${term}%`;
@@ -46,29 +77,29 @@ export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise
       filterString += `,comments.ilike.%${term}%`;
     });
     
-    console.log('Using filter string:', filterString);
+    console.log('Using fuzzy filter string:', filterString);
     
-    // Execute the search query against the database
-    const { data, error } = await supabase
+    // Execute the fuzzy search query against the database
+    const { data: fuzzyResults, error: fuzzyError } = await supabase
       .from('LTV Alumni Database')
       .select('*')
       .or(filterString)
       .limit(limit);
     
-    if (error) {
-      console.error('Supabase error:', error);
-      throw error;
+    if (fuzzyError) {
+      console.error('Supabase error during fuzzy search:', fuzzyError);
+      throw fuzzyError;
     }
     
-    console.log('Search results count:', data?.length || 0);
-    if (data && data.length > 0) {
-      console.log('Sample result:', JSON.stringify(data[0]));
+    console.log('Fuzzy search results count:', fuzzyResults?.length || 0);
+    if (fuzzyResults && fuzzyResults.length > 0) {
+      console.log('Sample fuzzy result:', JSON.stringify(fuzzyResults[0]));
     } else {
-      console.log('No results found');
+      console.log('No fuzzy results found');
     }
     
     // Transform database results to match the AlumniData interface
-    return (data || []).map(alumni => ({
+    return (fuzzyResults || []).map(alumni => ({
       id: alumni.Index || 0,
       name: `${alumni['First Name'] || ''} ${alumni['Last Name'] || ''}`.trim(),
       position: alumni['Title'] || '',
