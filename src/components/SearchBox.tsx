@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Loader2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { Input } from "@/components/ui/input";
 
 interface SearchBoxProps {
   onSearch?: (query: string) => void;
@@ -51,25 +52,26 @@ const SearchBox: React.FC<SearchBoxProps> = ({ onSearch }) => {
   return (
     <div className="w-full max-w-3xl mx-auto">
       <div className="mb-2 text-sm font-medium text-gray-700">
-        What guidance or expertise are you looking for?
+        Search for alumni by name, company, position, or expertise:
       </div>
-      <form onSubmit={handleSubmit} className="relative group">
-        <textarea
+      <form onSubmit={handleSubmit} className="relative">
+        <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="I'm looking for someone with expertise in go-to-market for early-stage enterprise software within the education sector in the United States"
-          className="w-full h-32 p-4 pr-14 text-gray-900 bg-white border border-gray-200 rounded-lg shadow-sm focus:ring-2 focus:ring-connect-blue focus:border-transparent outline-none transition-all resize-none"
+          placeholder="Search for alumni (e.g., Google, CEO, marketing, John Smith)"
+          className="pr-12 py-6 text-base"
           disabled={isSubmitting}
         />
         <button 
           type="submit"
-          className="absolute right-3 bottom-3 gradient-button rounded-lg p-3 text-white shadow-md transition-all hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-connect-blue focus:ring-offset-2 disabled:opacity-70"
+          className="absolute right-2 top-1/2 -translate-y-1/2 gradient-button rounded-lg p-2 text-white shadow-md transition-all hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-connect-blue focus:ring-offset-2 disabled:opacity-70"
           aria-label="Search"
           disabled={isSubmitting}
         >
-          <span>
-            {isSubmitting ? <Loader2 size={20} className="animate-spin" /> : <Search size={20} />}
-          </span>
+          {isSubmitting ? 
+            <Loader2 size={20} className="animate-spin" /> : 
+            <Search size={20} />
+          }
         </button>
       </form>
     </div>

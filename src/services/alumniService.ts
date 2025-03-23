@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { AlumniData } from '@/components/AlumniCard';
 
@@ -8,7 +9,7 @@ interface SearchParams {
 }
 
 /**
- * Search for alumni based on natural language query
+ * Search for alumni based on query across all fields
  */
 export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise<AlumniData[]> => {
   try {
@@ -19,92 +20,58 @@ export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise
       return [];
     }
 
-    // First try an exact search on specific fields
-    const exactQuery = query.trim();
-    console.log('Trying exact match first with:', exactQuery);
+    // Create search terms by splitting the query
+    const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
     
-    // Try exact match on critical fields first
-    const { data: exactMatches, error: exactMatchError } = await supabase
-      .from('LTV Alumni Database')
-      .select('*')
-      .or(`"First Name".ilike.${exactQuery},"Last Name".ilike.${exactQuery},Company.ilike.${exactQuery},Title.ilike.${exactQuery}`)
-      .limit(limit);
-    
-    if (exactMatchError) {
-      console.error('Error with exact match:', exactMatchError);
-    } else if (exactMatches && exactMatches.length > 0) {
-      console.log('Found exact matches:', exactMatches.length);
-      
-      // Transform exact matches to match AlumniData interface
-      return exactMatches.map(alumni => ({
-        id: alumni.Index || 0,
-        name: `${alumni['First Name'] || ''} ${alumni['Last Name'] || ''}`.trim(),
-        position: alumni['Title'] || '',
-        company: alumni['Company'] || '',
-        relevance: calculateRelevance(alumni, query),
-        email: alumni['Email Address'] || '',
-        linkedIn: alumni['LinkedIn URL'] || ''
-      }));
-    }
-    
-    // If no exact matches, perform fuzzy search
-    console.log('No exact matches, performing fuzzy search');
-    
-    // Create search terms from the query for fuzzy search
-    const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
-    console.log('Fuzzy search terms:', searchTerms);
-    
-    if (searchTerms.length === 0) {
-      console.log('No search terms found for fuzzy search, returning empty results');
+    if (terms.length === 0) {
       return [];
     }
+
+    console.log('Search terms:', terms);
     
-    // Build the filter string for fuzzy search across all relevant fields
-    let filterString = '';
+    // Build filter conditions for each term across all relevant fields
+    let filterConditions = [];
     
-    searchTerms.forEach((term, index) => {
-      if (index > 0) filterString += ',';
-      
-      // Search across all relevant fields with ilike for fuzzy matching
-      // Using %term% for substring matching
-      filterString += `"First Name".ilike.%${term}%`;
-      filterString += `,"Last Name".ilike.%${term}%`;
-      filterString += `,Title.ilike.%${term}%`;
-      filterString += `,Company.ilike.%${term}%`;
-      filterString += `,Location.ilike.%${term}%`;
-      filterString += `,function.ilike.%${term}%`;
-      filterString += `,stage.ilike.%${term}%`;
-      filterString += `,comments.ilike.%${term}%`;
-    });
+    for (const term of terms) {
+      // Add a condition for each field we want to search
+      filterConditions.push(`
+        "First Name".ilike.%${term}% or
+        "Last Name".ilike.%${term}% or
+        Title.ilike.%${term}% or
+        Company.ilike.%${term}% or
+        Location.ilike.%${term}% or
+        function.ilike.%${term}% or
+        stage.ilike.%${term}% or
+        comments.ilike.%${term}%
+      `);
+    }
     
-    console.log('Using fuzzy filter string:', filterString);
+    // Join all term conditions with AND (each term must match at least one field)
+    const filterString = filterConditions.join(' and ');
     
-    // Execute the fuzzy search query against the database
-    const { data: fuzzyResults, error: fuzzyError } = await supabase
+    console.log('Using filter:', filterString);
+    
+    // Execute the search query
+    const { data, error } = await supabase
       .from('LTV Alumni Database')
       .select('*')
       .or(filterString)
       .limit(limit);
     
-    if (fuzzyError) {
-      console.error('Supabase error during fuzzy search:', fuzzyError);
-      throw fuzzyError;
+    if (error) {
+      console.error('Error searching alumni:', error);
+      throw error;
     }
     
-    console.log('Fuzzy search results count:', fuzzyResults?.length || 0);
-    if (fuzzyResults && fuzzyResults.length > 0) {
-      console.log('Sample fuzzy result:', JSON.stringify(fuzzyResults[0]));
-    } else {
-      console.log('No fuzzy results found');
-    }
+    console.log('Results count:', data?.length || 0);
     
     // Transform database results to match the AlumniData interface
-    return (fuzzyResults || []).map(alumni => ({
+    return (data || []).map(alumni => ({
       id: alumni.Index || 0,
       name: `${alumni['First Name'] || ''} ${alumni['Last Name'] || ''}`.trim(),
       position: alumni['Title'] || '',
       company: alumni['Company'] || '',
-      relevance: calculateRelevance(alumni, query),
+      relevance: generateRelevanceText(alumni, query),
       email: alumni['Email Address'] || '',
       linkedIn: alumni['LinkedIn URL'] || ''
     }));
@@ -115,38 +82,32 @@ export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise
 };
 
 /**
- * Calculate relevance description based on search query
+ * Generate a relevance description for each alumni based on the search query
  */
-const calculateRelevance = (alumni: any, query: string): string => {
-  const name = `${alumni['First Name'] || ''} ${alumni['Last Name'] || ''}`.trim();
-  const position = alumni['Title'] || 'their position';
-  const company = alumni['Company'] || 'their company';
-  const function_area = alumni['function'] || '';
-  const stage = alumni['stage'] || '';
-  const comments = alumni['comments'] || '';
-  
-  // Create a more personalized relevance string based on available data
+const generateRelevanceText = (alumni: any, query: string): string => {
   const relevancePoints = [];
   
-  if (position && company) {
-    relevancePoints.push(`${name} has experience as ${position} at ${company}.`);
+  // Basic information about position and company
+  if (alumni['Title'] && alumni['Company']) {
+    relevancePoints.push(`Works as ${alumni['Title']} at ${alumni['Company']}.`);
   }
   
-  if (function_area) {
-    relevancePoints.push(`Their expertise in ${function_area} aligns with your interests.`);
+  // Add function information if available
+  if (alumni['function']) {
+    relevancePoints.push(`Expertise in ${alumni['function']}.`);
   }
   
-  if (stage) {
-    relevancePoints.push(`They have experience with ${stage} stage companies.`);
+  // Add stage information if available
+  if (alumni['stage']) {
+    relevancePoints.push(`Experience with ${alumni['stage']} stage companies.`);
   }
   
-  if (comments) {
-    relevancePoints.push(`${comments}`);
+  // Include any comments
+  if (alumni['comments']) {
+    relevancePoints.push(alumni['comments']);
   }
   
-  // Add a general point about how they can help with the specific query
-  relevancePoints.push(`Based on your search for "${query}", they can provide valuable insights and guidance.`);
-  
+  // Generate the final relevance text
   return relevancePoints.join(' ');
 };
 
@@ -161,7 +122,7 @@ export const getAlumniById = async (id: number): Promise<AlumniData | null> => {
       .from('LTV Alumni Database')
       .select('*')
       .eq('Index', id)
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error('Error fetching alumni by ID:', error);
@@ -172,8 +133,6 @@ export const getAlumniById = async (id: number): Promise<AlumniData | null> => {
       console.log('No alumni found with ID:', id);
       return null;
     }
-    
-    console.log('Found alumni:', data);
     
     return {
       id: data.Index || 0,

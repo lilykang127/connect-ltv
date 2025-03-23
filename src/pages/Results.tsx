@@ -12,7 +12,6 @@ const Results: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [results, setResults] = useState<AlumniData[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [searchSummary, setSearchSummary] = useState<string>('');
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -34,9 +33,6 @@ const Results: React.FC = () => {
         const alumniResults = await searchAlumni({ query });
         console.log("Results received:", alumniResults.length);
         setResults(alumniResults);
-        
-        // Set a summary of the search for debugging purposes
-        setSearchSummary(`Search for "${query}" returned ${alumniResults.length} results.`);
       } catch (error) {
         console.error('Error fetching results:', error);
         setError("Failed to search alumni. Please try again.");
@@ -71,9 +67,13 @@ const Results: React.FC = () => {
       <main className="container mx-auto flex-1 px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8 animate-fade-in">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Results for your query</h2>
-            <p className="text-gray-600 italic">"{query}"</p>
-            {searchSummary && <p className="text-sm text-gray-500 mt-1">{searchSummary}</p>}
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Results for "{query}"</h2>
+            <p className="text-gray-600">
+              {results.length > 0 ? 
+                `Found ${results.length} alumni matching your search.` : 
+                'No results found.'
+              }
+            </p>
           </div>
 
           {isLoading ? (
@@ -91,12 +91,12 @@ const Results: React.FC = () => {
             </div>
           ) : results.length > 0 ? (
             <div className="space-y-6">
-              {results.map((alumni, index) => (
+              {results.map((alumni) => (
                 <AlumniCard 
                   key={alumni.id} 
                   alumni={alumni} 
-                  rank={index} 
                   searchQuery={query}
+                  onClick={() => navigate(`/alumni/${alumni.id}`)}
                 />
               ))}
             </div>
