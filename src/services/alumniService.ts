@@ -29,34 +29,28 @@ export const searchAlumni = async ({ query, limit = 10 }: SearchParams): Promise
 
     console.log('Search terms:', terms);
     
-    // Build filter conditions for each term across all relevant fields
-    let filterConditions = [];
+    // Build a proper filter condition for Supabase
+    const filterConditions = terms.map(term => {
+      return `or("First Name".ilike.%${term}%,"Last Name".ilike.%${term}%,Title.ilike.%${term}%,Company.ilike.%${term}%,Location.ilike.%${term}%,function.ilike.%${term}%,stage.ilike.%${term}%,comments.ilike.%${term}%)`;
+    });
     
-    for (const term of terms) {
-      // Add a condition for each field we want to search
-      filterConditions.push(`
-        "First Name".ilike.%${term}% or
-        "Last Name".ilike.%${term}% or
-        Title.ilike.%${term}% or
-        Company.ilike.%${term}% or
-        Location.ilike.%${term}% or
-        function.ilike.%${term}% or
-        stage.ilike.%${term}% or
-        comments.ilike.%${term}%
-      `);
-    }
-    
-    // Join all term conditions with AND (each term must match at least one field)
-    const filterString = filterConditions.join(' and ');
-    
-    console.log('Using filter:', filterString);
-    
-    // Execute the search query
-    const { data, error } = await supabase
+    // Connect all terms with AND
+    let queryBuilder = supabase
       .from('LTV Alumni Database')
-      .select('*')
-      .or(filterString)
-      .limit(limit);
+      .select('*');
+    
+    // Apply each term filter
+    terms.forEach(term => {
+      queryBuilder = queryBuilder.or(
+        `"First Name".ilike.%${term}%,"Last Name".ilike.%${term}%,Title.ilike.%${term}%,Company.ilike.%${term}%,Location.ilike.%${term}%,function.ilike.%${term}%,stage.ilike.%${term}%,comments.ilike.%${term}%`
+      );
+    });
+    
+    // Apply limit
+    queryBuilder = queryBuilder.limit(limit);
+    
+    console.log('Executing search query');
+    const { data, error } = await queryBuilder;
     
     if (error) {
       console.error('Error searching alumni:', error);
