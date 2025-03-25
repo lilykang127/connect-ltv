@@ -1,7 +1,10 @@
 
 import React, { useState } from 'react';
 import { ExternalLink, Mail } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import EmailDraftDialog from './EmailDraftDialog';
 
 export interface AlumniData {
   id: number;
@@ -17,42 +20,22 @@ interface AlumniCardProps {
   alumni: AlumniData;
   searchQuery?: string;
   onClick?: () => void;
+  category?: string;
 }
 
-const AlumniCard: React.FC<AlumniCardProps> = ({ alumni, searchQuery = '', onClick }) => {
+const AlumniCard: React.FC<AlumniCardProps> = ({ alumni, searchQuery = '', onClick, category }) => {
   const { toast } = useToast();
   const [isHovered, setIsHovered] = useState(false);
 
   const handleEmailClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
     
-    // Generate an email subject based on the search query
-    const subject = encodeURIComponent(`Request for advice from a fellow HBS LTV alum`);
-    
-    // Generate an email body with personalized content
-    const introLines = [
-      `Hi ${alumni.name.split(' ')[0]},`,
-      '',
-      `I hope this email finds you well. I'm reaching out as a fellow Harvard Business School LTV alum seeking some advice.`,
-      '',
-      `I noticed your experience as ${alumni.position} at ${alumni.company} and thought you might be able to provide some insights regarding ${searchQuery}.`,
-      '',
-      `Would you be open to a brief conversation to share your perspective? I'd really appreciate your expertise on this topic.`,
-      '',
-      `Thank you for considering, and I look forward to potentially connecting.`,
-      '',
-      `Best regards,`,
-      `[Your Name]`
-    ];
-    
-    const body = encodeURIComponent(introLines.join('\n'));
-    
-    // Open the default email client with pre-filled content
-    window.location.href = `mailto:${alumni.email}?subject=${subject}&body=${body}`;
+    // Open the default email client
+    window.location.href = `mailto:${alumni.email}`;
     
     toast({
-      title: "Email draft created",
-      description: `A draft email to ${alumni.name} has been prepared in your default email client.`,
+      title: "Email client opened",
+      description: `Composing email to ${alumni.name}`,
       duration: 3000,
     });
   };
@@ -71,41 +54,55 @@ const AlumniCard: React.FC<AlumniCardProps> = ({ alumni, searchQuery = '', onCli
           </div>
           <div className="ml-4">
             <h3 className="text-lg font-semibold text-gray-900">{alumni.name}</h3>
-            <p className="text-sm text-gray-600">{alumni.position} at {alumni.company}</p>
+            <p className="text-sm text-gray-600 mt-1">Professional Experience: {alumni.position} at {alumni.company}</p>
           </div>
-        </div>
-        <div className="flex space-x-2">
-          {alumni.linkedIn && (
-            <a 
-              href={alumni.linkedIn} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="p-2 text-gray-500 hover:text-connect-blue transition-colors"
-              aria-label="LinkedIn Profile"
-              onClick={(e) => e.stopPropagation()} // Prevent card click
-            >
-              <ExternalLink size={18} />
-            </a>
-          )}
-          <button 
-            className="p-2 text-gray-500 hover:text-connect-blue transition-colors"
-            aria-label="Email directly"
-            onClick={handleEmailClick}
-          >
-            <Mail size={18} />
-          </button>
         </div>
       </div>
       
       <div className="mb-4">
-        <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Relevance</div>
+        <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Why Relevant</div>
         <p className="text-gray-700">{alumni.relevance}</p>
       </div>
       
-      <div className="mt-4 text-right">
-        <span className="text-sm text-connect-blue font-medium">
-          Click for details
-        </span>
+      <div className="mt-4 flex justify-end space-x-2">
+        {alumni.linkedIn && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(alumni.linkedIn, '_blank');
+            }}
+          >
+            <ExternalLink size={16} className="mr-1" />
+            LinkedIn
+          </Button>
+        )}
+        
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center"
+          onClick={handleEmailClick}
+        >
+          <Mail size={16} className="mr-1" />
+          Email
+        </Button>
+        
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Draft Intro Email
+            </Button>
+          </DialogTrigger>
+          <EmailDraftDialog alumni={alumni} searchQuery={searchQuery} />
+        </Dialog>
       </div>
     </div>
   );

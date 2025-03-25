@@ -6,11 +6,23 @@ import Logo from '@/components/Logo';
 import AlumniCard, { AlumniData } from '@/components/AlumniCard';
 import ResultsLoader from '@/components/ResultsLoader';
 import { searchAlumni } from '@/services/alumniService';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+
+// Number of alumni to show per category
+const ALUMNI_PER_CATEGORY = 5;
 
 const Results: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [results, setResults] = useState<AlumniData[]>([]);
+  const [allResults, setAllResults] = useState<AlumniData[]>([]);
+  const [categorizedResults, setCategorizedResults] = useState<{
+    topMatches: AlumniData[];
+    notableMatches: AlumniData[];
+    others: AlumniData[];
+  }>({
+    topMatches: [],
+    notableMatches: [],
+    others: []
+  });
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -26,7 +38,19 @@ const Results: React.FC = () => {
         console.log("Fetching all alumni profiles");
         const alumniResults = await searchAlumni({ query });
         console.log("Results received:", alumniResults.length);
-        setResults(alumniResults);
+        
+        setAllResults(alumniResults);
+        
+        // Categorize the results
+        // For now, we'll just split them evenly
+        // In a real application, you might want to use relevance scores or other metrics
+        const limitedResults = alumniResults.slice(0, ALUMNI_PER_CATEGORY * 3);
+        
+        setCategorizedResults({
+          topMatches: limitedResults.slice(0, ALUMNI_PER_CATEGORY),
+          notableMatches: limitedResults.slice(ALUMNI_PER_CATEGORY, ALUMNI_PER_CATEGORY * 2),
+          others: limitedResults.slice(ALUMNI_PER_CATEGORY * 2, ALUMNI_PER_CATEGORY * 3)
+        });
       } catch (error) {
         console.error('Error fetching results:', error);
         setError("Failed to fetch alumni. Please try again.");
@@ -42,6 +66,24 @@ const Results: React.FC = () => {
 
     fetchResults();
   }, [query, toast]);
+
+  const renderCategorySection = (title: string, alumni: AlumniData[], description: string) => (
+    <div className="mb-10">
+      <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
+      <p className="text-gray-600 mb-4">{description}</p>
+      <div className="space-y-6">
+        {alumni.map((alum) => (
+          <AlumniCard 
+            key={alum.id} 
+            alumni={alum} 
+            searchQuery={query}
+            onClick={() => navigate(`/alumni/${alum.id}`)}
+            category={title}
+          />
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-white">
@@ -61,10 +103,10 @@ const Results: React.FC = () => {
       <main className="container mx-auto flex-1 px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8 animate-fade-in">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">All Alumni Profiles</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Search Results</h2>
             <p className="text-gray-600">
-              {results.length > 0 ? 
-                `Showing ${results.length} alumni profiles.` : 
+              {allResults.length > 0 ? 
+                `Showing top ${Math.min(allResults.length, ALUMNI_PER_CATEGORY * 3)} alumni matches for "${query}"` : 
                 'Loading profiles...'
               }
             </p>
@@ -83,22 +125,31 @@ const Results: React.FC = () => {
                 Try Again
               </button>
             </div>
-          ) : results.length > 0 ? (
-            <div className="space-y-6">
-              {results.map((alumni) => (
-                <AlumniCard 
-                  key={alumni.id} 
-                  alumni={alumni} 
-                  searchQuery={query}
-                  onClick={() => navigate(`/alumni/${alumni.id}`)}
-                />
-              ))}
+          ) : allResults.length > 0 ? (
+            <div className="space-y-12">
+              {renderCategorySection(
+                "Top Matches",
+                categorizedResults.topMatches,
+                "Alumni who most closely match your search criteria."
+              )}
+              
+              {renderCategorySection(
+                "Notable Matches",
+                categorizedResults.notableMatches,
+                "Alumni with significant relevant experience to your search."
+              )}
+              
+              {renderCategorySection(
+                "Others You Might Be Interested In",
+                categorizedResults.others,
+                "Additional alumni with perspectives that could be valuable."
+              )}
             </div>
           ) : (
             <div className="text-center py-12">
               <h3 className="text-xl font-medium text-gray-700 mb-4">No profiles found</h3>
               <p className="text-gray-600 mb-6">
-                Please try again later.
+                Please try again with different search terms.
               </p>
               <button 
                 onClick={() => navigate('/')}
