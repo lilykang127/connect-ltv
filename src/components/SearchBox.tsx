@@ -52,13 +52,13 @@ const SearchBox: React.FC<SearchBoxProps> = ({ onSearch }) => {
   return (
     <div className="w-full max-w-3xl mx-auto">
       <div className="mb-2 text-sm font-medium text-gray-700">
-        Search for alumni by name, company, position, or expertise:
+        Search LTV alumni by name, company, position, expertise, or location:
       </div>
       <form onSubmit={handleSubmit} className="relative">
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Someone who joined a startup after HBS and eventually founded their own startup"
+          placeholder="e.g. Founder, Product Manager, Amazon, Marketing, Manufacturing, New York, etc."
           className="pr-12 py-6 text-base"
           disabled={isSubmitting}
         />
