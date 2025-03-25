@@ -58,7 +58,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({ onSearch }) => {
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search for alumni (e.g., Google, CEO, marketing, John Smith)"
+          placeholder="Someone who joined a startup after HBS and eventually founded their own startup"
           className="pr-12 py-6 text-base"
           disabled={isSubmitting}
         />

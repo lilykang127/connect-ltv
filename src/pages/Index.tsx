@@ -17,10 +17,9 @@ const Index: React.FC = () => {
             ConnectLTV
           </h1>
           <p className="text-gray-700 md:text-lg max-w-2xl mx-auto animate-slide-up" style={{ animationDelay: '200ms' }}>
-            Welcome to ConnectLTV – your gateway to a dynamic network of Harvard Business School's Launching Tech Venture alumni. 
-            Seeking career guidance, startup feedback, go-to-market expertise, or more? Simply type your query, 
-            and ConnectLTV will identify the alumni best suited to support you. Connect, collaborate, 
-            and innovate like never before with ConnectLTV!
+            Welcome to ConnectLTV, your link to Harvard Business School's Launching Tech Venture alumni network. 
+            For career advice, startup feedback, or market expertise, just enter your query, and ConnectLTV will 
+            match you with the right alumni.
           </p>
         </div>
 
