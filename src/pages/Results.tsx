@@ -35,15 +35,13 @@ const Results: React.FC = () => {
       setError(null);
       
       try {
-        console.log("Fetching all alumni profiles");
+        console.log("Performing search with query:", query);
         const alumniResults = await searchAlumni({ query });
         console.log("Results received:", alumniResults.length);
         
         setAllResults(alumniResults);
         
-        // Categorize the results
-        // For now, we'll just split them evenly
-        // In a real application, you might want to use relevance scores or other metrics
+        // Take top 15 results and categorize them
         const limitedResults = alumniResults.slice(0, ALUMNI_PER_CATEGORY * 3);
         
         setCategorizedResults({
@@ -107,7 +105,7 @@ const Results: React.FC = () => {
             <p className="text-gray-600">
               {allResults.length > 0 ? 
                 `Showing top ${Math.min(allResults.length, ALUMNI_PER_CATEGORY * 3)} alumni matches for "${query}"` : 
-                'Loading profiles...'
+                query ? 'Searching...' : 'Loading all profiles...'
               }
             </p>
           </div>

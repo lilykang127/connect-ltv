@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { AlumniData } from '@/components/AlumniCard';
 
@@ -8,40 +9,121 @@ interface SearchParams {
 }
 
 /**
- * Search for alumni - now always returns all profiles regardless of query
+ * Search for alumni using fuzzy search across all fields
  */
 export const searchAlumni = async ({ query, limit = 50 }: SearchParams): Promise<AlumniData[]> => {
   try {
     console.log('Search request received with query:', query);
-    console.log('Fetching all alumni profiles regardless of query');
     
-    // Simply fetch all records from the database with a limit
-    const { data, error } = await supabase
+    if (!query.trim()) {
+      console.log('Empty query, fetching all alumni profiles');
+      // Simply fetch all records from the database with a limit
+      const { data, error } = await supabase
+        .from('LTV Alumni Database')
+        .select('*')
+        .limit(limit);
+      
+      if (error) {
+        console.error('Error fetching alumni:', error);
+        throw error;
+      }
+      
+      return transformAlumniData(data || [], '');
+    }
+    
+    console.log('Performing fuzzy search with query:', query);
+    
+    // Create search conditions for each relevant field
+    const searchTerms = query.trim().toLowerCase().split(/\s+/);
+    
+    // Start with the base query
+    let supabaseQuery = supabase
       .from('LTV Alumni Database')
-      .select('*')
-      .limit(limit);
+      .select('*');
+    
+    // Add search conditions
+    for (const term of searchTerms) {
+      supabaseQuery = supabaseQuery.or(
+        `"First Name".ilike.%${term}%,` + 
+        `"Last Name".ilike.%${term}%,` +
+        `"Title".ilike.%${term}%,` +
+        `"Company".ilike.%${term}%,` +
+        `"Location".ilike.%${term}%,` +
+        `"function".ilike.%${term}%,` +
+        `"stage".ilike.%${term}%,` +
+        `"comments".ilike.%${term}%`
+      );
+    }
+    
+    // Execute the query with limit
+    const { data, error } = await supabaseQuery.limit(limit);
     
     if (error) {
-      console.error('Error fetching alumni:', error);
+      console.error('Error during fuzzy search:', error);
       throw error;
     }
     
-    console.log('Results count:', data?.length || 0);
+    console.log('Search results count:', data?.length || 0);
     
-    // Transform database results to match the AlumniData interface
-    return (data || []).map(alumni => ({
-      id: alumni.Index || 0,
-      name: `${alumni['First Name'] || ''} ${alumni['Last Name'] || ''}`.trim(),
-      position: alumni['Title'] || '',
-      company: alumni['Company'] || '',
-      relevance: generateRelevanceText(alumni, query),
-      email: alumni['Email Address'] || '',
-      linkedIn: alumni['LinkedIn URL'] || ''
-    }));
+    // Score and sort results by relevance
+    const scoredResults = scoreAndSortResults(data || [], query);
+    
+    return transformAlumniData(scoredResults, query);
   } catch (error) {
     console.error('Error fetching alumni:', error);
     throw error;
   }
+};
+
+/**
+ * Score and sort results by relevance to the search query
+ */
+const scoreAndSortResults = (results: any[], query: string): any[] => {
+  const terms = query.toLowerCase().split(/\s+/);
+  
+  // Score each result based on matches
+  const scoredResults = results.map(alumni => {
+    let score = 0;
+    const fullName = `${alumni['First Name'] || ''} ${alumni['Last Name'] || ''}`.toLowerCase();
+    const title = (alumni['Title'] || '').toLowerCase();
+    const company = (alumni['Company'] || '').toLowerCase();
+    const location = (alumni['Location'] || '').toLowerCase();
+    const functionField = (alumni['function'] || '').toLowerCase();
+    const stage = (alumni['stage'] || '').toLowerCase();
+    const comments = (alumni['comments'] || '').toLowerCase();
+    
+    // Check each term against each field
+    for (const term of terms) {
+      // Give higher weights to name matches
+      if (fullName.includes(term)) score += 10;
+      if (title.includes(term)) score += 7;
+      if (company.includes(term)) score += 7;
+      if (location.includes(term)) score += 3;
+      if (functionField.includes(term)) score += 5;
+      if (stage.includes(term)) score += 5;
+      if (comments.includes(term)) score += 5;
+    }
+    
+    return { ...alumni, score };
+  });
+  
+  // Sort by score (highest first)
+  return scoredResults.sort((a, b) => b.score - a.score);
+};
+
+/**
+ * Transform database results to match the AlumniData interface
+ */
+const transformAlumniData = (data: any[], query: string): AlumniData[] => {
+  return data.map(alumni => ({
+    id: alumni.Index || 0,
+    name: `${alumni['First Name'] || ''} ${alumni['Last Name'] || ''}`.trim(),
+    position: alumni['Title'] || '',
+    company: alumni['Company'] || '',
+    relevance: generateRelevanceText(alumni, query),
+    email: alumni['Email Address'] || '',
+    linkedIn: alumni['LinkedIn URL'] || ''
+  }));
 };
 
 /**
