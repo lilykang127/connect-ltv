@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { ExternalLink, Mail } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
 import EmailDraftDialog from './EmailDraftDialog';
 
 export interface AlumniData {
@@ -91,17 +91,20 @@ const AlumniCard: React.FC<AlumniCardProps> = ({ alumni, searchQuery = '', onCli
         </Button>
         
         <Dialog>
-          <DialogTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center"
-              onClick={(e) => e.stopPropagation()}
-            >
-              Draft Intro Email
-            </Button>
-          </DialogTrigger>
-          <EmailDraftDialog alumni={alumni} searchQuery={searchQuery} />
+          <EmailDraftDialog 
+            alumni={alumni} 
+            searchQuery={searchQuery}
+            trigger={
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Draft Intro Email
+              </Button>
+            }
+          />
         </Dialog>
       </div>
     </div>

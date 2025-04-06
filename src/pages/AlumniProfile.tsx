@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getAlumniById, getLinkedInScrapeData } from '@/services/alumniService';
@@ -8,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertCircle, ArrowLeft, Linkedin, Mail, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Dialog } from '@/components/ui/dialog';
 import EmailDraftDialog from '@/components/EmailDraftDialog';
 
 const AlumniProfile = () => {
@@ -81,13 +81,10 @@ const AlumniProfile = () => {
     );
   }
 
-  // Format LinkedIn data for display
   const formatLinkedInData = (data: string) => {
-    // Split by section headers and process each section
     const sections = data.split(/About:|Experience:|Education:/g).filter(section => section.trim());
     
     if (sections.length < 3) {
-      // Fallback if the data doesn't match expected format
       return <pre className="whitespace-pre-wrap text-sm">{data}</pre>;
     }
     
@@ -165,15 +162,17 @@ const AlumniProfile = () => {
             <CardFooter className="flex justify-center border-t pt-6">
               <div className="grid grid-cols-2 gap-3 w-full">
                 {alumni.email && (
-                  <EmailDraftDialog 
-                    alumni={alumni} 
-                    searchQuery=""
-                    trigger={
-                      <Button className="w-full">
-                        <Mail className="mr-2 h-4 w-4" /> Email
-                      </Button>
-                    } 
-                  />
+                  <Dialog>
+                    <EmailDraftDialog 
+                      alumni={alumni} 
+                      searchQuery=""
+                      trigger={
+                        <Button className="w-full">
+                          <Mail className="mr-2 h-4 w-4" /> Email
+                        </Button>
+                      } 
+                    />
+                  </Dialog>
                 )}
                 {alumni.linkedIn && (
                   <Button variant="outline" className="w-full" asChild>

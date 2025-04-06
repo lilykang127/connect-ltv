@@ -4,20 +4,23 @@ import { Copy } from 'lucide-react';
 import { AlumniData } from './AlumniCard';
 import { useToast } from "@/hooks/use-toast";
 import {
+  Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogClose
+  DialogClose,
+  DialogTrigger
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 interface EmailDraftDialogProps {
   alumni: AlumniData;
   searchQuery: string;
+  trigger?: React.ReactNode;
 }
 
-const EmailDraftDialog: React.FC<EmailDraftDialogProps> = ({ alumni, searchQuery }) => {
+const EmailDraftDialog: React.FC<EmailDraftDialogProps> = ({ alumni, searchQuery, trigger }) => {
   const { toast } = useToast();
   
   // Generate personalized email draft
@@ -68,29 +71,32 @@ Best regards,
   };
   
   return (
-    <DialogContent className="sm:max-w-lg">
-      <DialogHeader>
-        <DialogTitle>Email Draft to {alumni.name}</DialogTitle>
-        <DialogDescription>
-          A personalized introduction email based on your search and the alumni's background.
-        </DialogDescription>
-      </DialogHeader>
-      
-      <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200 text-sm whitespace-pre-wrap">
-        <div className="font-medium mb-2">Subject: {subject}</div>
-        <div>{body}</div>
-      </div>
-      
-      <div className="mt-4 flex justify-end space-x-2">
-        <Button variant="outline" onClick={handleCopyToClipboard}>
-          <Copy size={16} className="mr-2" />
-          Copy to Clipboard
-        </Button>
-        <Button onClick={handleOpenEmailClient}>
-          Send Email
-        </Button>
-      </div>
-    </DialogContent>
+    <>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Email Draft to {alumni.name}</DialogTitle>
+          <DialogDescription>
+            A personalized introduction email based on your search and the alumni's background.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200 text-sm whitespace-pre-wrap">
+          <div className="font-medium mb-2">Subject: {subject}</div>
+          <div>{body}</div>
+        </div>
+        
+        <div className="mt-4 flex justify-end space-x-2">
+          <Button variant="outline" onClick={handleCopyToClipboard}>
+            <Copy size={16} className="mr-2" />
+            Copy to Clipboard
+          </Button>
+          <Button onClick={handleOpenEmailClient}>
+            Send Email
+          </Button>
+        </div>
+      </DialogContent>
+    </>
   );
 };
 
