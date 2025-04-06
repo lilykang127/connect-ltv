@@ -18,6 +18,7 @@ export type Database = {
           function: string | null
           Index: number
           "Last Name": string | null
+          "LinkedIn Scrape": string | null
           "LinkedIn URL": string | null
           Location: string | null
           stage: string | null
@@ -31,6 +32,7 @@ export type Database = {
           function?: string | null
           Index: number
           "Last Name"?: string | null
+          "LinkedIn Scrape"?: string | null
           "LinkedIn URL"?: string | null
           Location?: string | null
           stage?: string | null
@@ -44,6 +46,7 @@ export type Database = {
           function?: string | null
           Index?: number
           "Last Name"?: string | null
+          "LinkedIn Scrape"?: string | null
           "LinkedIn URL"?: string | null
           Location?: string | null
           stage?: string | null

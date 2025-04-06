@@ -193,3 +193,67 @@ export const getAlumniById = async (id: number): Promise<AlumniData | null> => {
     return null;
   }
 };
+
+/**
+ * Get LinkedIn scrape data for an alumni by ID
+ */
+export const getLinkedInScrapeData = async (id: number): Promise<string | null> => {
+  try {
+    console.log('Fetching LinkedIn scrape data for alumni with ID:', id);
+    
+    const { data, error } = await supabase
+      .from('LTV Alumni Database')
+      .select('LinkedIn Scrape')
+      .eq('Index', id)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error fetching LinkedIn scrape data:', error);
+      throw error;
+    }
+    
+    if (!data || !data['LinkedIn Scrape']) {
+      console.log('No LinkedIn scrape data found for alumni with ID:', id);
+      return null;
+    }
+    
+    return data['LinkedIn Scrape'];
+  } catch (error) {
+    console.error('Error fetching LinkedIn scrape data:', error);
+    return null;
+  }
+};
+
+/**
+ * Get statistics about LinkedIn scraping progress
+ */
+export const getScrapingStats = async (): Promise<{ total: number; scraped: number; pending: number }> => {
+  try {
+    // Get total count
+    const { count: total } = await supabase
+      .from('LTV Alumni Database')
+      .select('*', { count: 'exact', head: true });
+    
+    // Get count of scraped profiles
+    const { count: scraped } = await supabase
+      .from('LTV Alumni Database')
+      .select('*', { count: 'exact', head: true })
+      .not('LinkedIn Scrape', 'is', null);
+    
+    // Get count of not scraped profiles with LinkedIn URLs
+    const { count: pending } = await supabase
+      .from('LTV Alumni Database')
+      .select('*', { count: 'exact', head: true })
+      .is('LinkedIn Scrape', null)
+      .not('LinkedIn URL', 'is', null);
+    
+    return {
+      total: total || 0,
+      scraped: scraped || 0,
+      pending: pending || 0
+    };
+  } catch (error) {
+    console.error('Error fetching scraping stats:', error);
+    return { total: 0, scraped: 0, pending: 0 };
+  }
+};
