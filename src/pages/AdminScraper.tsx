@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -40,7 +39,6 @@ const AdminScraper = () => {
   const [status, setStatus] = useState<'idle' | 'running' | 'completed' | 'error'>('idle');
   const [statusMessage, setStatusMessage] = useState('');
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   // Initialize form
   const form = useForm<ScraperFormValues>({
@@ -50,30 +48,8 @@ const AdminScraper = () => {
     },
   });
 
-  // Function to check if user is an admin
-  const checkAdminStatus = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      toast({
-        title: "Access Denied",
-        description: "You must be logged in to access this page.",
-        variant: "destructive",
-      });
-      navigate('/');
-      return false;
-    }
-    
-    // For simplicity, we're considering all authenticated users as admins
-    // In production, you should implement proper role-based access control
-    return true;
-  };
-
   // Function to start the scraping process
   const startScraping = async (values: ScraperFormValues) => {
-    const isAdmin = await checkAdminStatus();
-    if (!isAdmin) return;
-
     try {
       setIsRunning(true);
       setStatus('running');
@@ -135,9 +111,6 @@ const AdminScraper = () => {
   
   React.useEffect(() => {
     const fetchStats = async () => {
-      const isAdmin = await checkAdminStatus();
-      if (!isAdmin) return;
-      
       // Get total count
       const { count: total } = await supabase
         .from('LTV Alumni Database')
