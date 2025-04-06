@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { 
   Form,
@@ -22,6 +23,7 @@ import {
   FormMessage
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -53,7 +55,7 @@ const AdminScraper = () => {
     try {
       setIsRunning(true);
       setStatus('running');
-      setStatusMessage('Initializing LinkedIn scraper...');
+      setStatusMessage('Initializing LinkedIn data simulation...');
       
       // Start the scraping process
       const response = await supabase.functions.invoke('linkedin-scraper', {
@@ -61,7 +63,7 @@ const AdminScraper = () => {
       });
       
       if (response.error) {
-        throw new Error(response.error.message || 'An error occurred during scraping');
+        throw new Error(response.error.message || 'An error occurred during the process');
       }
       
       const { data } = response;
@@ -75,24 +77,24 @@ const AdminScraper = () => {
         setStatus('error');
         setStatusMessage(data.error);
         toast({
-          title: "Scraping Error",
+          title: "Process Error",
           description: data.error,
           variant: "destructive",
         });
       } else {
         setStatus('completed');
-        setStatusMessage(data.message || 'Scraping completed successfully');
+        setStatusMessage(data.message || 'Data simulation completed successfully');
         toast({
-          title: "Scraping Completed",
-          description: `Successfully scraped ${data.completed} out of ${data.total} profiles.`,
+          title: "Process Completed",
+          description: `Successfully processed ${data.completed} out of ${data.total} profiles.`,
         });
       }
     } catch (error) {
-      console.error('Error running LinkedIn scraper:', error);
+      console.error('Error running LinkedIn simulator:', error);
       setStatus('error');
       setStatusMessage(error.message || 'An unexpected error occurred');
       toast({
-        title: "Scraping Error",
+        title: "Process Error",
         description: error.message || 'An unexpected error occurred',
         variant: "destructive",
       });
@@ -141,7 +143,16 @@ const AdminScraper = () => {
 
   return (
     <div className="container mx-auto py-10">
-      <h1 className="text-3xl font-bold mb-8">LinkedIn Profile Scraper</h1>
+      <h1 className="text-3xl font-bold mb-8">LinkedIn Profile Data Generator</h1>
+      
+      <Alert variant="default" className="mb-6">
+        <Info className="h-4 w-4" />
+        <AlertTitle>Demo Mode Active</AlertTitle>
+        <AlertDescription>
+          This is running in simulation mode. Real LinkedIn scraping requires browser automation which 
+          isn't supported in this environment. The system will generate placeholder data instead.
+        </AlertDescription>
+      </Alert>
       
       <div className="grid gap-6">
         {/* Stats cards */}
@@ -157,7 +168,7 @@ const AdminScraper = () => {
           
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle>Scraped Profiles</CardTitle>
+              <CardTitle>Profiles with Data</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold">{stats.scraped}</p>
@@ -175,16 +186,12 @@ const AdminScraper = () => {
           </Card>
         </div>
         
-        {/* Scraper config and control */}
+        {/* Processor config and control */}
         <Card>
           <CardHeader>
-            <CardTitle>Run LinkedIn Scraper</CardTitle>
+            <CardTitle>Generate LinkedIn Profile Data</CardTitle>
             <CardDescription>
-              This will scrape LinkedIn profiles for alumni where we have URLs but no data yet.
-              <span className="block mt-2 text-amber-500 font-medium">
-                <AlertTriangle className="inline-block mr-1 h-4 w-4" />
-                Use cautiously. LinkedIn may block IPs that scrape too aggressively.
-              </span>
+              This will create sample LinkedIn data for alumni where we have URLs but no data yet.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -205,7 +212,7 @@ const AdminScraper = () => {
                         />
                       </FormControl>
                       <FormDescription>
-                        Number of profiles to scrape in this batch (1-20 recommended)
+                        Number of profiles to process in this batch (1-20 recommended)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -216,10 +223,10 @@ const AdminScraper = () => {
                   {isRunning ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Scraping...
+                      Processing...
                     </>
                   ) : (
-                    'Start Scraping'
+                    'Start Processing'
                   )}
                 </Button>
               </form>
