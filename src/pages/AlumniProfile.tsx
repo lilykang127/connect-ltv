@@ -166,8 +166,8 @@ const AlumniProfile = () => {
               <div className="grid grid-cols-2 gap-3 w-full">
                 {alumni.email && (
                   <EmailDraftDialog 
-                    email={alumni.email} 
-                    name={alumni.name} 
+                    alumni={alumni} 
+                    searchQuery=""
                     trigger={
                       <Button className="w-full">
                         <Mail className="mr-2 h-4 w-4" /> Email
