@@ -1,14 +1,23 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Logo from '@/components/Logo';
 import SearchBox from '@/components/SearchBox';
 import SearchExamples from '@/components/SearchExamples';
+import { Button } from '@/components/ui/button';
+import { Settings } from 'lucide-react';
 
 const Index: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-white">
-      <header className="container mx-auto py-6">
+      <header className="container mx-auto py-6 flex justify-between items-center">
         <Logo />
+        <Link to="/admin/scraper">
+          <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <Settings size={16} />
+            <span className="hidden sm:inline">Admin</span>
+          </Button>
+        </Link>
       </header>
 
       <main className="container mx-auto flex-1 flex flex-col items-center justify-center px-4 py-12">
