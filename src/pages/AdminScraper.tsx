@@ -4,14 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import { 
   Form,
@@ -23,7 +22,6 @@ import {
   FormMessage
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -55,7 +53,7 @@ const AdminScraper = () => {
     try {
       setIsRunning(true);
       setStatus('running');
-      setStatusMessage('Initializing LinkedIn data simulation...');
+      setStatusMessage('Initializing LinkedIn scraper...');
       
       // Start the scraping process
       const response = await supabase.functions.invoke('linkedin-scraper', {
@@ -77,24 +75,24 @@ const AdminScraper = () => {
         setStatus('error');
         setStatusMessage(data.error);
         toast({
-          title: "Process Error",
+          title: "Scraping Error",
           description: data.error,
           variant: "destructive",
         });
       } else {
         setStatus('completed');
-        setStatusMessage(data.message || 'Data simulation completed successfully');
+        setStatusMessage(data.message || 'Data scraping completed successfully');
         toast({
-          title: "Process Completed",
-          description: `Successfully processed ${data.completed} out of ${data.total} profiles.`,
+          title: "Scraping Completed",
+          description: `Successfully scraped ${data.completed} out of ${data.total} profiles.`,
         });
       }
     } catch (error) {
-      console.error('Error running LinkedIn simulator:', error);
+      console.error('Error running LinkedIn scraper:', error);
       setStatus('error');
       setStatusMessage(error.message || 'An unexpected error occurred');
       toast({
-        title: "Process Error",
+        title: "Scraping Error",
         description: error.message || 'An unexpected error occurred',
         variant: "destructive",
       });
@@ -143,16 +141,7 @@ const AdminScraper = () => {
 
   return (
     <div className="container mx-auto py-10">
-      <h1 className="text-3xl font-bold mb-8">LinkedIn Profile Data Generator</h1>
-      
-      <Alert variant="default" className="mb-6">
-        <Info className="h-4 w-4" />
-        <AlertTitle>Demo Mode Active</AlertTitle>
-        <AlertDescription>
-          This is running in simulation mode. Real LinkedIn scraping requires browser automation which 
-          isn't supported in this environment. The system will generate placeholder data instead.
-        </AlertDescription>
-      </Alert>
+      <h1 className="text-3xl font-bold mb-8">LinkedIn Profile Scraper</h1>
       
       <div className="grid gap-6">
         {/* Stats cards */}
@@ -189,9 +178,9 @@ const AdminScraper = () => {
         {/* Processor config and control */}
         <Card>
           <CardHeader>
-            <CardTitle>Generate LinkedIn Profile Data</CardTitle>
+            <CardTitle>Scrape LinkedIn Profiles</CardTitle>
             <CardDescription>
-              This will create sample LinkedIn data for alumni where we have URLs but no data yet.
+              This will scrape data from LinkedIn profiles where we have URLs but no data yet.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -223,10 +212,10 @@ const AdminScraper = () => {
                   {isRunning ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
+                      Scraping...
                     </>
                   ) : (
-                    'Start Processing'
+                    'Start Scraping'
                   )}
                 </Button>
               </form>
